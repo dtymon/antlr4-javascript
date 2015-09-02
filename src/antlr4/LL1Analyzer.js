@@ -113,7 +113,7 @@ LL1Analyzer.prototype.LOOK = function(s, stopState, ctx) {
     this._LOOK(s, stopState, lookContext, r, new Set(), new BitSet(), seeThruPreds, true);
     return r;
 };
-    
+
 //*
 // Compute set of tokens that can follow {@code s} in the ATN in the
 // specified {@code ctx}.
@@ -145,7 +145,7 @@ LL1Analyzer.prototype.LOOK = function(s, stopState, ctx) {
 // is {@code null}.
 ///
 LL1Analyzer.prototype._LOOK = function(s, stopState , ctx, look, lookBusy, calledRuleStack, seeThruPreds, addEOF) {
-    var c = new ATNConfig({state:s, alt:0}, ctx);
+    var c = new ATNConfig({state:s, alt:0, context: ctx}, null);
     if (lookBusy.contains(c)) {
         return;
     }
@@ -220,4 +220,3 @@ LL1Analyzer.prototype._LOOK = function(s, stopState , ctx, look, lookBusy, calle
 };
 
 exports.LL1Analyzer = LL1Analyzer;
-
