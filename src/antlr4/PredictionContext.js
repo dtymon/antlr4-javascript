@@ -31,8 +31,10 @@
 
 var RuleContext = require('./RuleContext').RuleContext;
 
+var globalNodeCount = 0;
 function PredictionContext(cachedHashString) {
 	this.cachedHashString = cachedHashString;
+	this.id = globalNodeCount++;
 }
 
 // Represents {@code $} in local context prediction, which means wildcard.
@@ -45,9 +47,6 @@ PredictionContext.EMPTY = null;
 // {@code $} = {@link //EMPTY_RETURN_STATE}.
 // /
 PredictionContext.EMPTY_RETURN_STATE = 0x7FFFFFFF;
-
-PredictionContext.globalNodeCount = 1;
-PredictionContext.id = PredictionContext.globalNodeCount;
 
 // Stores the computed hash code of this {@link PredictionContext}. The hash
 // code is computed in parts to match the following reference algorithm.
@@ -101,6 +100,7 @@ function calculateEmptyHashString() {
 
 function PredictionContextCache() {
 	this.cache = {};
+	this.size = 0;
 	return this;
 }
 
@@ -112,21 +112,22 @@ PredictionContextCache.prototype.add = function(ctx) {
 	if (ctx === PredictionContext.EMPTY) {
 		return PredictionContext.EMPTY;
 	}
-	var existing = this.cache[ctx] || null;
-	if (existing !== null) {
+	var existing = this.cache[ctx.cachedHashString];
+	if (existing != null) {
 		return existing;
 	}
-	this.cache[ctx] = ctx;
+	this.cache[ctx.cachedHashString] = ctx;
+	++this.size;
 	return ctx;
 };
 
 PredictionContextCache.prototype.get = function(ctx) {
-	return this.cache[ctx] || null;
+	return this.cache[ctx.cachedHashString] || null;
 };
 
 Object.defineProperty(PredictionContextCache.prototype, "length", {
 	get : function() {
-		return this.cache.length;
+		return this.size;
 	}
 });
 
@@ -304,7 +305,7 @@ ArrayPredictionContext.prototype.toString = function() {
 // Return {@link //EMPTY} if {@code outerContext} is empty or null.
 // /
 function predictionContextFromRuleContext(atn, outerContext) {
-	if (outerContext === undefined || outerContext === null) {
+	if (outerContext == null) {
 		outerContext = RuleContext.EMPTY;
 	}
 	// if we are in RuleContext of start rule, s, then PredictionContext
