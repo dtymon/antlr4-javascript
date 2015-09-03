@@ -433,71 +433,95 @@ LexerATNSimulator.prototype.closure = function(input, config, configs,
 // side-effect: can alter configs.hasSemanticContext
 LexerATNSimulator.prototype.getEpsilonTarget = function(input, config, trans,
 		configs, speculative, treatEofAsEpsilon) {
-	var cfg = null;
-	if (trans.serializationType === Transition.RULE) {
-		var newContext = SingletonPredictionContext.create(config.context, trans.followState.stateNumber);
-		cfg = new LexerATNConfig( { state:trans.target, context:newContext}, config);
-	} else if (trans.serializationType === Transition.PRECEDENCE) {
-		throw "Precedence predicates are not supported in lexers.";
-	} else if (trans.serializationType === Transition.PREDICATE) {
-		// Track traversing semantic predicates. If we traverse,
-		// we cannot add a DFA state for this "reach" computation
-		// because the DFA would not test the predicate again in the
-		// future. Rather than creating collections of semantic predicates
-		// like v3 and testing them on prediction, v4 will test them on the
-		// fly all the time using the ATN not the DFA. This is slower but
-		// semantically it's not used that often. One of the key elements to
-		// this predicate mechanism is not adding DFA states that see
-		// predicates immediately afterwards in the ATN. For example,
+    var cfg = null;
+    switch (trans.serializationType) {
+        case Transition.RULE:
+        {
+            var newContext = SingletonPredictionContext.create(config.context, trans.followState.stateNumber);
+            cfg = new LexerATNConfig( { state:trans.target, context:newContext}, config);
+        }
+        break;
 
-		// a : ID {p1}? | ID {p2}? ;
+        case Transition.PRECEDENCE:
+        {
+            throw "Precedence predicates are not supported in lexers.";
+        }
+        break;
 
-		// should create the start state for rule 'a' (to save start state
-		// competition), but should not create target of ID state. The
-		// collection of ATN states the following ID references includes
-		// states reached by traversing predicates. Since this is when we
-		// test them, we cannot cash the DFA state target of ID.
+        case Transition.PREDICATE:
+        {
+            // Track traversing semantic predicates. If we traverse,
+            // we cannot add a DFA state for this "reach" computation
+            // because the DFA would not test the predicate again in the
+            // future. Rather than creating collections of semantic predicates
+            // like v3 and testing them on prediction, v4 will test them on the
+            // fly all the time using the ATN not the DFA. This is slower but
+            // semantically it's not used that often. One of the key elements to
+            // this predicate mechanism is not adding DFA states that see
+            // predicates immediately afterwards in the ATN. For example,
 
-		if (this.debug) {
-			console.log("EVAL rule " + trans.ruleIndex + ":" + trans.predIndex);
-		}
-		configs.hasSemanticContext = true;
-		if (this.evaluatePredicate(input, trans.ruleIndex, trans.predIndex, speculative)) {
-			cfg = new LexerATNConfig({ state:trans.target}, config);
-		}
-	} else if (trans.serializationType === Transition.ACTION) {
-		if (config.context === null || config.context.hasEmptyPath()) {
-			// execute actions anywhere in the start rule for a token.
-			//
-			// TODO: if the entry rule is invoked recursively, some
-			// actions may be executed during the recursive call. The
-			// problem can appear when hasEmptyPath() is true but
-			// isEmpty() is false. In this case, the config needs to be
-			// split into two contexts - one with just the empty path
-			// and another with everything but the empty path.
-			// Unfortunately, the current algorithm does not allow
-			// getEpsilonTarget to return two configurations, so
-			// additional modifications are needed before we can support
-			// the split operation.
-			var lexerActionExecutor = LexerActionExecutor.append(config.lexerActionExecutor,
-					this.atn.lexerActions[trans.actionIndex]);
-			cfg = new LexerATNConfig({ state:trans.target, lexerActionExecutor:lexerActionExecutor }, config);
-		} else {
-			// ignore actions in referenced rules
-			cfg = new LexerATNConfig( { state:trans.target}, config);
-		}
-	} else if (trans.serializationType === Transition.EPSILON) {
-		cfg = new LexerATNConfig({ state:trans.target}, config);
-	} else if (trans.serializationType === Transition.ATOM ||
-				trans.serializationType === Transition.RANGE ||
-				trans.serializationType === Transition.SET) {
-		if (treatEofAsEpsilon) {
-			if (trans.matches(Token.EOF, 0, 0xFFFF)) {
-				cfg = new LexerATNConfig( { state:trans.target }, config);
-			}
-		}
-	}
-	return cfg;
+            // a : ID {p1}? | ID {p2}? ;
+
+            // should create the start state for rule 'a' (to save start state
+            // competition), but should not create target of ID state. The
+            // collection of ATN states the following ID references includes
+            // states reached by traversing predicates. Since this is when we
+            // test them, we cannot cash the DFA state target of ID.
+
+            if (this.debug) {
+                console.log("EVAL rule " + trans.ruleIndex + ":" + trans.predIndex);
+            }
+            configs.hasSemanticContext = true;
+            if (this.evaluatePredicate(input, trans.ruleIndex, trans.predIndex, speculative)) {
+                cfg = new LexerATNConfig({ state:trans.target}, config);
+            }
+        }
+        break;
+
+        case Transition.ACTION:
+        {
+            if (config.context === null || config.context.hasEmptyPath()) {
+                // execute actions anywhere in the start rule for a token.
+                //
+                // TODO: if the entry rule is invoked recursively, some
+                // actions may be executed during the recursive call. The
+                // problem can appear when hasEmptyPath() is true but
+                // isEmpty() is false. In this case, the config needs to be
+                // split into two contexts - one with just the empty path
+                // and another with everything but the empty path.
+                // Unfortunately, the current algorithm does not allow
+                // getEpsilonTarget to return two configurations, so
+                // additional modifications are needed before we can support
+                // the split operation.
+                var lexerActionExecutor = LexerActionExecutor.append(config.lexerActionExecutor,
+                        this.atn.lexerActions[trans.actionIndex]);
+                cfg = new LexerATNConfig({ state:trans.target, lexerActionExecutor:lexerActionExecutor }, config);
+            } else {
+                // ignore actions in referenced rules
+                cfg = new LexerATNConfig( { state:trans.target}, config);
+            }
+        }
+        break;
+
+        case Transition.EPSILON:
+        {
+            cfg = new LexerATNConfig({ state:trans.target}, config);
+        }
+        break;
+
+        case Transition.ATOM:
+        case Transition.RANGE:
+        case Transition.SET:
+        {
+            if (treatEofAsEpsilon) {
+                if (trans.matches(Token.EOF, 0, 0xFFFF)) {
+                    cfg = new LexerATNConfig( { state:trans.target }, config);
+                }
+            }
+        }
+        break;
+    }
+    return cfg;
 };
 
 // Evaluate a predicate specified in the lexer.
