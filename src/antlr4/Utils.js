@@ -206,7 +206,7 @@ BitSet.prototype.equals = function(other) {
 
 Object.defineProperty(BitSet.prototype, "length", {
 	get : function() {
-		return this.values().length;
+		return this.count;
 	}
 });
 
