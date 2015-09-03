@@ -37,8 +37,7 @@ Object.defineProperty(Set.prototype, "length", {
 });
 
 Set.prototype.add = function(value) {
-	var hash = this.hashFunction(value);
-	var key = "hash_" + hash.hashCode();
+	var key = "hash_" + this.hashFunction(value);
 	if(key in this.data) {
 		var i;
 		var values = this.data[key];
@@ -56,8 +55,7 @@ Set.prototype.add = function(value) {
 };
 
 Set.prototype.contains = function(value) {
-	var hash = this.hashFunction(value);
-	var key = "hash_" + hash.hashCode();
+	var key = "hash_" + this.hashFunction(value);
 	if(key in this.data) {
 		var i;
 		var values = this.data[key];
