@@ -59,8 +59,6 @@ var ErrorNodeImpl = Tree.ErrorNodeImpl;
 var Interval = require("./IntervalSet").Interval;
 
 function ParserRuleContext(parent, invokingStateNumber) {
-	parent = parent || null;
-	invokingStateNumber = invokingStateNumber || null;
 	RuleContext.call(this, parent, invokingStateNumber);
 	this.ruleIndex = -1;
     // * If we are debugging or building a parse tree for a visitor,
@@ -131,17 +129,17 @@ ParserRuleContext.prototype.addErrorNode = function(badToken) {
 };
 
 ParserRuleContext.prototype.getChild = function(i, type) {
-	type = type || null;
-	if (type === null) {
-		return this.children.length>=i ? this.children[i] : null;
+	var numChildren = (this.children == null) ? 0 : this.children.length;
+	if (type == null) {
+		return numChildren>=i ? this.children[i] : null;
 	} else {
-		for(var j=0; j<this.children.length; j++) {
+		for(var j=0; j<numChildren; ++j) {
 			var child = this.children[j];
 			if(child instanceof type) {
 				if(i===0) {
 					return child;
 				} else {
-					i -= 1;
+					--i;
 				}
 			}
 		}
@@ -151,14 +149,15 @@ ParserRuleContext.prototype.getChild = function(i, type) {
 
 
 ParserRuleContext.prototype.getToken = function(ttype, i) {
-	for(var j=0; j<this.children.length; j++) {
+	var numChildren = (this.children == null) ? 0 : this.children.length;
+	for(var j=0; j<numChildren; ++j) {
 		var child = this.children[j];
 		if (child instanceof TerminalNode) {
 			if (child.symbol.type === ttype) {
 				if(i===0) {
 					return child;
 				} else {
-					i -= 1;
+					--i;
 				}
 			}
         }
@@ -167,11 +166,12 @@ ParserRuleContext.prototype.getToken = function(ttype, i) {
 };
 
 ParserRuleContext.prototype.getTokens = function(ttype ) {
-    if (this.children=== null) {
+    var numChildren = (this.children == null) ? 0 : this.children.length;
+    if (numChildren == 0) {
         return [];
     } else {
 		var tokens = [];
-		for(var j=0; j<this.children.length; j++) {
+		for(var j=0; j<numChildren; ++j) {
 			var child = this.children[j];
 			if (child instanceof TerminalNode) {
 				if (child.symbol.type === ttype) {
@@ -188,11 +188,12 @@ ParserRuleContext.prototype.getTypedRuleContext = function(ctxType, i) {
 };
 
 ParserRuleContext.prototype.getTypedRuleContexts = function(ctxType) {
-    if (this.children=== null) {
+    var numChildren = (this.children == null) ? 0 : this.children.length;
+    if (numChildren == 0) {
         return [];
     } else {
 		var contexts = [];
-		for(var j=0; j<this.children.length; j++) {
+		for(var j=0; j<numChildren; ++j) {
 			var child = this.children[j];
 			if (child instanceof ctxType) {
 				contexts.push(child);
@@ -214,7 +215,7 @@ ParserRuleContext.prototype.getSourceInterval = function() {
     if( this.start === null || this.stop === null) {
         return INVALID_INTERVAL;
     } else {
-        return Interval(this.start.tokenIndex, this.stop.tokenIndex);
+        return new Interval(this.start.tokenIndex, this.stop.tokenIndex);
     }
 };
 

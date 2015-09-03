@@ -54,12 +54,14 @@ var INVALID_INTERVAL = require('./tree/Tree').INVALID_INTERVAL;
 
 function RuleContext(parent, invokingState) {
 	RuleNode.call(this);
+
 	// What context invoked this rule?
-	this.parentCtx = parent || null;
+	this.parentCtx = parent;
+
 	// What state invoked the rule associated with this context?
 	// The "return address" is the followState of invokingState
 	// If parent is null, this should be -1.
-	this.invokingState = invokingState || -1;
+	this.invokingState = (parent == null) ? -1 : invokingState;
 	return this;
 }
 
@@ -71,7 +73,7 @@ RuleContext.prototype.depth = function() {
 	var p = this;
 	while (p !== null) {
 		p = p.parentCtx;
-		n += 1;
+		++n;
 	}
 	return n;
 };
@@ -162,4 +164,3 @@ RuleContext.prototype.toString = function(ruleNames, stop) {
 	s += "]";
 	return s;
 };
-
