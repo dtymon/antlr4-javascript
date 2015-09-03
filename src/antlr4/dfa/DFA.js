@@ -33,16 +33,15 @@ var ATNConfigSet = require('./../atn/ATNConfigSet').ATNConfigSet;
 var DFASerializer = require('./DFASerializer').DFASerializer;
 var LexerDFASerializer = require('./DFASerializer').LexerDFASerializer;
 
-var Utils = require('../Utils');
-var Set = Utils.Set;
-
 function DFAStatesSet() {
-    Set.call(this);
 	return this;
 }
 
-DFAStatesSet.prototype = Object.create(Set.prototype);
-DFAStatesSet.prototype.constructor = DFAStatesSet;
+Object.defineProperty(DFAStatesSet.prototype, "length", {
+	get : function() {
+		return Object.keys(this).length;
+	}
+});
 
 function DFA(atnStartState, decision) {
 	if (decision === undefined) {
