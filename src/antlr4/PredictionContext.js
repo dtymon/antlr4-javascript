@@ -265,16 +265,43 @@ ArrayPredictionContext.prototype.getReturnState = function(index) {
 };
 
 ArrayPredictionContext.prototype.equals = function(other) {
-	if (this === other) {
-		return true;
-	} else if (!(other instanceof ArrayPredictionContext)) {
-		return false;
-	} else if (this.hashString !== other.hashString()) {
-		return false; // can't be same if hash is different
-	} else {
-		return this.returnStates === other.returnStates &&
-				this.parents === other.parents;
-	}
+    if (this === other)
+    {
+        return true;
+    }
+
+    if (!(other instanceof ArrayPredictionContext))
+    {
+        return false;
+    }
+
+    if (this.cachedHashString != other.cachedHashString)
+    {
+        return false; // can't be same if hash is different
+    }
+
+    if ((this.returnStates.length != other.returnStates.length) ||
+        (this.parents.length != other.parents.length))
+    {
+        return false;
+    }
+
+    for (var idx = 0; idx < this.returnStates.length; ++idx)
+    {
+        if (this.returnStates[idx] != other.returnStates[idx])
+        {
+            return false;
+        }
+    }
+
+    for (idx = 0; idx < this.parents.length; ++idx)
+    {
+        if (!this.parents[idx].equals(other.parents[idx]))
+        {
+            return false;
+        }
+    }
+    return true;
 };
 
 ArrayPredictionContext.prototype.toString = function() {
@@ -333,7 +360,7 @@ function calculateListsHashString(parents, returnStates) {
 
 function merge(a, b, rootIsWildcard, mergeCache) {
 	// share same graph if both same
-	if (a === b) {
+	if (a === b || a.equals(b)) {
 		return a;
 	}
 	if (a instanceof SingletonPredictionContext && b instanceof SingletonPredictionContext) {
@@ -431,9 +458,7 @@ function mergeSingletons(a, b, rootIsWildcard, mergeCache) {
 	} else { // a != b payloads differ
 		// see if we can collapse parents due to $+x parents if local ctx
 		var singleParent = null;
-		if (a === b || (a.parentCtx !== null && a.parentCtx === b.parentCtx)) { // ax +
-																				// bx =
-																				// [a,b]x
+		if (a === b || (a.parentCtx !== null && a.parentCtx.equals(b.parentCtx))) { // ax + bx = [a,b]x
 			singleParent = a.parentCtx;
 		}
 		if (singleParent !== null) { // parents are same
@@ -579,9 +604,7 @@ function mergeArrays(a, b, rootIsWildcard, mergeCache) {
 			// $+$ = $
 			var bothDollars = payload === PredictionContext.EMPTY_RETURN_STATE &&
 					a_parent === null && b_parent === null;
-			var ax_ax = (a_parent !== null && b_parent !== null && a_parent === b_parent); // ax+ax
-																							// ->
-																							// ax
+			var ax_ax = (a_parent !== null && b_parent !== null && a_parent.equals(b_parent)); // ax+ax -> ax
 			if (bothDollars || ax_ax) {
 				mergedParents[k] = a_parent; // choose left
 				mergedReturnStates[k] = payload;
@@ -590,31 +613,31 @@ function mergeArrays(a, b, rootIsWildcard, mergeCache) {
 				mergedParents[k] = mergedParent;
 				mergedReturnStates[k] = payload;
 			}
-			i += 1; // hop over left one as usual
-			j += 1; // but also skip one in right side since we merge
+			++i; // hop over left one as usual
+			++j; // but also skip one in right side since we merge
 		} else if (a.returnStates[i] < b.returnStates[j]) { // copy a[i] to M
 			mergedParents[k] = a_parent;
 			mergedReturnStates[k] = a.returnStates[i];
-			i += 1;
+			++i;
 		} else { // b > a, copy b[j] to M
 			mergedParents[k] = b_parent;
 			mergedReturnStates[k] = b.returnStates[j];
-			j += 1;
+			++j;
 		}
-		k += 1;
+		++k;
 	}
 	// copy over any payloads remaining in either array
 	if (i < a.returnStates.length) {
-		for (var p = i; p < a.returnStates.length; p++) {
+		for (var p = i; p < a.returnStates.length; ++p) {
 			mergedParents[k] = a.parents[p];
 			mergedReturnStates[k] = a.returnStates[p];
-			k += 1;
+			++k;
 		}
 	} else {
-		for (var p = j; p < b.returnStates.length; p++) {
+		for (var p = j; p < b.returnStates.length; ++p) {
 			mergedParents[k] = b.parents[p];
 			mergedReturnStates[k] = b.returnStates[p];
-			k += 1;
+			++k;
 		}
 	}
 	// trim merged if we combined a few that had same stack tops
@@ -635,13 +658,13 @@ function mergeArrays(a, b, rootIsWildcard, mergeCache) {
 
 	// if we created same array as a or b, return that instead
 	// TODO: track whether this is possible above during merge sort for speed
-	if (M === a) {
+	if (M.equals(a)) {
 		if (mergeCache !== null) {
 			mergeCache.set(a, b, a);
 		}
 		return a;
 	}
-	if (M === b) {
+	if (M.equals(b)) {
 		if (mergeCache !== null) {
 			mergeCache.set(a, b, b);
 		}
@@ -662,13 +685,13 @@ function mergeArrays(a, b, rootIsWildcard, mergeCache) {
 function combineCommonParents(parents) {
 	var uniqueParents = {};
 
-	for (var p = 0; p < parents.length; p++) {
+	for (var p = 0; p < parents.length; ++p) {
 		var parent = parents[p];
 		if (!(parent in uniqueParents)) {
 			uniqueParents[parent] = parent;
 		}
 	}
-	for (var q = 0; q < parents.length; q++) {
+	for (var q = 0; q < parents.length; ++q) {
 		parents[q] = uniqueParents[parents[q]];
 	}
 }
@@ -677,23 +700,24 @@ function getCachedPredictionContext(context, contextCache, visited) {
 	if (context.isEmpty()) {
 		return context;
 	}
-	var existing = visited[context] || null;
-	if (existing !== null) {
+	var key = context.id;
+	var existing = visited[key];
+	if (existing != null) {
 		return existing;
 	}
 	existing = contextCache.get(context);
-	if (existing !== null) {
-		visited[context] = existing;
+	if (existing != null) {
+		visited[key] = existing;
 		return existing;
 	}
 	var changed = false;
 	var parents = [];
-	for (var i = 0; i < parents.length; i++) {
+	for (var i = 0; i < parents.length; ++i) {
 		var parent = getCachedPredictionContext(context.getParent(i), contextCache, visited);
 		if (changed || parent !== context.getParent(i)) {
 			if (!changed) {
 				parents = [];
-				for (var j = 0; j < context.length; j++) {
+				for (var j = 0; j < context.length; ++j) {
 					parents[j] = context.getParent(j);
 				}
 				changed = true;
@@ -703,44 +727,39 @@ function getCachedPredictionContext(context, contextCache, visited) {
 	}
 	if (!changed) {
 		contextCache.add(context);
-		visited[context] = context;
+		visited[key] = context;
 		return context;
 	}
 	var updated = null;
 	if (parents.length === 0) {
 		updated = PredictionContext.EMPTY;
 	} else if (parents.length === 1) {
-		updated = SingletonPredictionContext.create(parents[0], context
-				.getReturnState(0));
+		updated = SingletonPredictionContext.create(parents[0], context.getReturnState(0));
 	} else {
 		updated = new ArrayPredictionContext(parents, context.returnStates);
 	}
 	contextCache.add(updated);
-	visited[updated] = updated;
-	visited[context] = updated;
+	visited[updated.id] = updated;
+	visited[context.id] = updated;
 
 	return updated;
 }
 
 // ter's recursive version of Sam's getAllNodes()
 function getAllContextNodes(context, nodes, visited) {
-	if (nodes === null) {
-		nodes = [];
-		return getAllContextNodes(context, nodes, visited);
-	} else if (visited === null) {
-		visited = {};
-		return getAllContextNodes(context, nodes, visited);
-	} else {
-		if (context === null || visited[context] !== null) {
-			return nodes;
-		}
-		visited[context] = context;
-		nodes.push(context);
-		for (var i = 0; i < context.length; i++) {
-			getAllContextNodes(context.getParent(i), nodes, visited);
-		}
-		return nodes;
-	}
+    nodes   = (nodes == null)   ? [] : nodes;
+    visited = (visited == null) ? {} : visited;
+
+    if (context == null || visited[context._instanceCount] != null)
+    {
+        return;
+    }
+    visited[context._instanceCount] = context;
+    nodes.push(context);
+    for (var i = 0; i < context.length; ++i)
+    {
+        getAllContextNodes(context.getParent(i), nodes, visited);
+    }
 }
 
 exports.merge = merge;
