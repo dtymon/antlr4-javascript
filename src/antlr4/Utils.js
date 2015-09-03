@@ -24,42 +24,58 @@ function standardHashFunction(a) {
 }
 
 function Set(hashFunction, equalsFunction) {
-	this.data = {};
-	this.hashFunction = hashFunction || standardHashFunction;
-	this.equalsFunction = equalsFunction || standardEqualsFunction;
-	return this;
+    this.data = {};
+    this.count = 0;
+    this.hashFunction = hashFunction || standardHashFunction;
+    this.equalsFunction = equalsFunction || standardEqualsFunction;
+    return this;
 }
 
 Object.defineProperty(Set.prototype, "length", {
 	get : function() {
-		return this.values().length;
+		return this.count;
 	}
 });
 
 Set.prototype.add = function(value) {
-	var key = "hash_" + this.hashFunction(value);
-	if(key in this.data) {
-		var i;
-		var values = this.data[key];
-		for(i=0;i<values.length; i++) {
-			if(this.equalsFunction(value, values[i])) {
-				return values[i];
-			}
-		}
-		values.push(value);
-		return value;
-	} else {
-		this.data[key] = [ value ];
-		return value;
-	}
-};
-
-Set.prototype.addIfAbsent = function(value) {
-    var key = "hash_" + this.hashFunction(value);
+    var key = this.hashFunction(value);
     var values = this.data[key];
     if (values == null)
     {
         this.data[key] = [ value ];
+        ++this.count;
+        return value;
+    }
+
+    var numValues = values.length;
+    for (var idx = 0; idx < numValues; ++idx)
+    {
+        if (this.equalsFunction(value, values[idx]))
+        {
+            // Already present, no need to add
+            return values[idx];
+        }
+    }
+    values.push(value);
+    ++this.count;
+    return value;
+};
+
+Set.prototype.addIfAbsent = function(value) {
+    // While this method could easily be implemented as:
+    //    return this.add(value) === value;
+    //
+    // it is a very high frequency call and the additional function call
+    // overhead seems to add a small percentage to the performance. Hence the
+    // implementation has been replicated here with the only difference being a
+    // boolean return value.
+    //
+    var key = this.hashFunction(value);
+    var values = this.data[key];
+    if (values == null)
+    {
+        this.data[key] = [ value ];
+        ++this.count;
         return true;
     }
 
@@ -73,35 +89,43 @@ Set.prototype.addIfAbsent = function(value) {
         }
     }
     values.push(value);
+    ++this.count;
     return true;
 };
 
 Set.prototype.contains = function(value) {
-	var key = "hash_" + this.hashFunction(value);
-	if(key in this.data) {
-		var i;
-		var values = this.data[key];
-		for(i=0;i<values.length; i++) {
-			if(this.equalsFunction(value, values[i])) {
-				return true;
-			}
-		}
-	}
-	return false;
+    var key = this.hashFunction(value);
+    var values = this.data[key];
+    if (values == null)
+    {
+        return false;
+    }
+
+    var numValues = values.length;
+    for (var idx = 0; idx < numValues; ++idx)
+    {
+        if (this.equalsFunction(value, values[idx]))
+        {
+            return true;
+        }
+    }
+    return false;
 };
 
 Set.prototype.values = function() {
-	var l = [];
-	for(var key in this.data) {
-		if(key.indexOf("hash_")===0) {
-			l = l.concat(this.data[key]);
-		}
-	}
-	return l;
+    var l = [];
+    for (var key in this.data)
+    {
+        if (this.data.hasOwnProperty(key))
+        {
+            l = l.concat(this.data[key]);
+        }
+    }
+    return l;
 };
 
 Set.prototype.toString = function() {
-	return arrayToString(this.values());
+    return arrayToString(this.values());
 };
 
 function BitSet() {
@@ -196,25 +220,24 @@ function AltDict() {
 }
 
 AltDict.prototype.get = function(key) {
-	key = "k-" + key;
-	if(key in this.data){
-		return this.data[key];
-	} else {
-		return null;
-	}
+    var result = this.data[key];
+    return (result === undefined) ? null : result;
 };
 
 AltDict.prototype.put = function(key, value) {
-	key = "k-" + key;
 	this.data[key] = value;
 };
 
 AltDict.prototype.values = function() {
-	var data = this.data;
-	var keys = Object.keys(this.data);
-	return keys.map(function(key) {
-		return data[key];
-	});
+    var l = [];
+    for (var key in this.data)
+    {
+        if (this.data.hasOwnProperty(key))
+        {
+            l = l.concat(this.data[key]);
+        }
+    }
+    return l;
 };
 
 function DoubleDict() {
