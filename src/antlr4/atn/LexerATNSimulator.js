@@ -272,13 +272,13 @@ LexerATNSimulator.prototype.computeTargetState = function(input, s, t) {
 		if (!reach.hasSemanticContext) {
 			// we got nowhere on t, don't throw out this knowledge; it'd
 			// cause a failover from DFA later.
-			this.addDFAEdge(s, t, ATNSimulator.ERROR);
+			this.addDFAEdgeWithDFAState(s, t, ATNSimulator.ERROR);
 		}
 		// stop when we can't match any more char
 		return ATNSimulator.ERROR;
 	}
 	// Add an edge from s to target DFA found/created for reach
-	return this.addDFAEdge(s, t, null, reach);
+	return this.addDFAEdgeWithConfigSet(s, t, reach);
 };
 
 LexerATNSimulator.prototype.failOrAccept = function(prevAccept, input, reach, t) {
@@ -551,38 +551,35 @@ LexerATNSimulator.prototype.captureSimState = function(settings, input, dfaState
 	settings.dfaState = dfaState;
 };
 
-LexerATNSimulator.prototype.addDFAEdge = function(from_, tk, to, cfgs) {
-	if (to === undefined) {
-		to = null;
-	}
-	if (cfgs === undefined) {
-		cfgs = null;
-	}
-	if (to === null && cfgs !== null) {
-		// leading to this call, ATNConfigSet.hasSemanticContext is used as a
-		// marker indicating dynamic predicate evaluation makes this edge
-		// dependent on the specific input sequence, so the static edge in the
-		// DFA should be omitted. The target DFAState is still created since
-		// execATN has the ability to resynchronize with the DFA state cache
-		// following the predicate evaluation step.
-		//
-		// TJP notes: next time through the DFA, we see a pred again and eval.
-		// If that gets us to a previously created (but dangling) DFA
-		// state, we can continue in pure DFA mode from there.
-		// /
-		var suppressEdge = cfgs.hasSemanticContext;
-		cfgs.hasSemanticContext = false;
+LexerATNSimulator.prototype.addDFAEdgeWithConfigSet = function(from_, tk, cfgs) {
+	// leading to this call, ATNConfigSet.hasSemanticContext is used as a
+	// marker indicating dynamic predicate evaluation makes this edge
+	// dependent on the specific input sequence, so the static edge in the
+	// DFA should be omitted. The target DFAState is still created since
+	// execATN has the ability to resynchronize with the DFA state cache
+	// following the predicate evaluation step.
+	//
+	// TJP notes: next time through the DFA, we see a pred again and eval.
+	// If that gets us to a previously created (but dangling) DFA
+	// state, we can continue in pure DFA mode from there.
+	//
+	var suppressEdge = cfgs.hasSemanticContext;
+	cfgs.hasSemanticContext = false;
 
-		to = this.addDFAState(cfgs);
+	var to = this.addDFAState(cfgs);
 
-		if (suppressEdge) {
-			return to;
-		}
+	if (suppressEdge) {
+		return to;
 	}
-	// add the edge
+
+	this.addDFAEdgeWithDFAState(from_, tk, to);
+	return to;
+}
+
+LexerATNSimulator.prototype.addDFAEdgeWithDFAState = function(from_, tk, to) {
 	if (tk < LexerATNSimulator.MIN_DFA_EDGE || tk > LexerATNSimulator.MAX_DFA_EDGE) {
 		// Only track edges within the DFA bounds
-		return to;
+		return;
 	}
 	if (this.debug) {
 		console.log("EDGE " + from_ + " -> " + to + " upon " + tk);
@@ -592,8 +589,6 @@ LexerATNSimulator.prototype.addDFAEdge = function(from_, tk, to, cfgs) {
 		from_.edges = [];
 	}
 	from_.edges[tk - LexerATNSimulator.MIN_DFA_EDGE] = to; // connect
-
-	return to;
 };
 
 // Add a new DFA state if there isn't one with this set of
