@@ -57,7 +57,7 @@ Set.prototype.add = function(value) {
 
 Set.prototype.contains = function(value) {
 	var hash = this.hashFunction(value);
-	var key = hash.hashCode();
+	var key = "hash_" + hash.hashCode();
 	if(key in this.data) {
 		var i;
 		var values = this.data[key];
