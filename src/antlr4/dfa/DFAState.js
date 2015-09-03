@@ -72,14 +72,8 @@ PredPrediction.prototype.toString = function() {
 // /
 
 function DFAState(stateNumber, configs) {
-	if (stateNumber === null) {
-		stateNumber = -1;
-	}
-	if (configs === null) {
-		configs = new ATNConfigSet();
-	}
-	this.stateNumber = stateNumber;
-	this.configs = configs;
+	this.stateNumber = (stateNumber == null) ? -1 : stateNumber;
+	this.configs = (configs == null) ? new ATNConfigSet() : configs;
 	// {@code edges[symbol]} points to target of symbol. Shift up by 1 so (-1)
 	// {@link Token//EOF} maps to {@code edges[0]}.
 	this.edges = null;
@@ -118,9 +112,9 @@ function DFAState(stateNumber, configs) {
 DFAState.prototype.getAltSet = function() {
 	var alts = new Set();
 	if (this.configs !== null) {
-		for (var i = 0; i < this.configs.length; i++) {
-			var c = this.configs[i];
-			alts.add(c.alt);
+		var numConfigs = this.configs.length;
+		for (var i = 0; i < numConfigs; ++i) {
+			alts.add(this.configs[i].alt);
 		}
 	}
 	if (alts.length === 0) {
