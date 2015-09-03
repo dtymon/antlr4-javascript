@@ -188,17 +188,33 @@ ATNConfigSet.prototype.addAll = function(coll) {
 };
 
 ATNConfigSet.prototype.equals = function(other) {
-	if (this === other) {
-		return true;
-	} else if (!(other instanceof ATNConfigSet)) {
-		return false;
-	}
-	return this.configs !== null && this.configs.equals(other.configs) &&
-			this.fullCtx === other.fullCtx &&
-			this.uniqueAlt === other.uniqueAlt &&
-			this.conflictingAlts === other.conflictingAlts &&
-			this.hasSemanticContext === other.hasSemanticContext &&
-			this.dipsIntoOuterContext === other.dipsIntoOuterContext;
+    if (this === other) {
+        return true;
+    }
+
+    if (!(other instanceof ATNConfigSet)) {
+        return false;
+    }
+
+    var numConfigs = this.configs.length;
+    if (numConfigs !== other.configs.length ||
+        this.fullCtx !== other.fullCtx ||
+        this.uniqueAlt !== other.uniqueAlt ||
+        this.conflictingAlts !== other.conflictingAlts ||
+        this.hasSemanticContext !== other.hasSemanticContext ||
+        this.dipsIntoOuterContext !== other.dipsIntoOuterContext)
+    {
+        return false;
+    }
+
+    for (var idx = 0; idx < numConfigs; ++idx)
+    {
+        if (!this.configs[idx].equals(other.configs[idx]))
+        {
+            return false;
+        }
+    }
+    return true;
 };
 
 ATNConfigSet.prototype.hashString = function() {
