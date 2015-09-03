@@ -332,7 +332,7 @@ ParserATNSimulator.prototype.adaptivePredict = function(input, decision, outerCo
     this._input = input;
     this._startIndex = input.index;
     this._outerContext = outerContext;
-    
+
     var dfa = this.decisionToDFA[decision];
     this._dfa = dfa;
     var m = input.mark();
@@ -747,7 +747,7 @@ ParserATNSimulator.prototype.computeReachSet = function(closure, t, fullCtx) {
     // For full-context reach operations, separate handling is required to
     // ensure that the alternative matching the longest overall sequence is
     // chosen when multiple such configurations can match the input.
-    
+
     var skippedStopStates = null;
 
     // First figure out where we can reach on input t
@@ -1138,7 +1138,7 @@ ParserATNSimulator.prototype.getSynValidOrSemInvalidAltThatFinishedDecisionEntry
     }
     return ATN.INVALID_ALT_NUMBER;
 };
-    
+
 ParserATNSimulator.prototype.getAltThatFinishedDecisionEntryRule = function(configs) {
     var alts = [];
     for(var i=0;i<configs.items.length; i++) {
@@ -1192,7 +1192,7 @@ ParserATNSimulator.prototype.splitAccordingToSemanticValidity = function( config
 ParserATNSimulator.prototype.evalSemanticContext = function(predPredictions, outerContext, complete) {
     var predictions = new BitSet();
     for(var i=0;i<predPredictions.length;i++) {
-    	var pair = predPredictions[i];
+	var pair = predPredictions[i];
         if (pair.pred === SemanticContext.NONE) {
             predictions.add(pair.alt);
             if (! complete) {
@@ -1258,10 +1258,10 @@ ParserATNSimulator.prototype.closureCheckingStopState = function(config, configs
                     }
                     continue;
                 }
-                returnState = this.atn.states[config.context.getReturnState(i)];
-                newContext = config.context.getParent(i); // "pop" return state
+                var returnState = this.atn.states[config.context.getReturnState(i)];
+                var newContext = config.context.getParent(i); // "pop" return state
                 var parms = {state:returnState, alt:config.alt, context:newContext, semanticContext:config.semanticContext};
-                c = new ATNConfig(parms, null);
+                var c = new ATNConfig(parms, null);
                 // While we have context to pop back from, we may have
                 // gotten that context AFTER having falling off a rule.
                 // Make sure we track that we are now out of context.
@@ -1369,7 +1369,7 @@ ParserATNSimulator.prototype.getEpsilonTarget = function(config, t, collectPredi
         }
         return null;
     default:
-    	return null;
+	return null;
     }
 };
 
@@ -1385,7 +1385,7 @@ ParserATNSimulator.prototype.precedenceTransition = function(config, pt,  collec
         console.log("PRED (collectPredicates=" + collectPredicates + ") " +
                 pt.precedence + ">=_p, ctx dependent=true");
         if (this.parser!==null) {
-        	console.log("context surrounding pred is " + Utils.arrayToString(this.parser.getRuleInvocationStack()));
+		console.log("context surrounding pred is " + Utils.arrayToString(this.parser.getRuleInvocationStack()));
         }
     }
     var c = null;
@@ -1538,7 +1538,7 @@ ParserATNSimulator.prototype.dumpDeadEndConfigs = function(nvae) {
     console.log("dead end configs: ");
     var decs = nvae.getDeadEndConfigs();
     for(var i=0; i<decs.length; i++) {
-    	var c = decs[i];
+	var c = decs[i];
         var trans = "no edges";
         if (c.state.transitions.length>0) {
             var t = c.state.transitions[0];
@@ -1560,7 +1560,7 @@ ParserATNSimulator.prototype.noViableAlt = function(input, outerContext, configs
 ParserATNSimulator.prototype.getUniqueAlt = function(configs) {
     var alt = ATN.INVALID_ALT_NUMBER;
     for(var i=0;i<configs.items.length;i++) {
-    	var c = configs.items[i];
+	var c = configs.items[i];
         if (alt === ATN.INVALID_ALT_NUMBER) {
             alt = c.alt // found first alt
         } else if( c.alt!==alt) {
@@ -1669,7 +1669,7 @@ ParserATNSimulator.prototype.reportContextSensitivity = function(dfa, prediction
         this.parser.getErrorListenerDispatch().reportContextSensitivity(this.parser, dfa, startIndex, stopIndex, prediction, configs);
     }
 };
-    
+
 // If context sensitive parsing, we know it's ambiguity not conflict//
 ParserATNSimulator.prototype.reportAmbiguity = function(dfa, D, startIndex, stopIndex,
                                exact, ambigAlts, configs ) {
@@ -1682,5 +1682,5 @@ ParserATNSimulator.prototype.reportAmbiguity = function(dfa, D, startIndex, stop
         this.parser.getErrorListenerDispatch().reportAmbiguity(this.parser, dfa, startIndex, stopIndex, exact, ambigAlts, configs);
     }
 };
-            
+
 exports.ParserATNSimulator = ParserATNSimulator;
