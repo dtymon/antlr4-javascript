@@ -50,7 +50,7 @@ function checkParams(params, isCfg) {
 	} else {
 		var props = {};
 		props.state = params.state || null;
-		props.alt = params.alt || null;
+		props.alt = (params.alt === undefined) ? null : params.alt;
 		props.context = params.context || null;
 		props.semanticContext = params.semanticContext || null;
 		if(isCfg) {
@@ -138,7 +138,7 @@ ATNConfig.prototype.toString = function() {
 
 function LexerATNConfig(params, config) {
 	ATNConfig.call(this, params, config);
-    
+
     // This is the backing field for {@link //getLexerActionExecutor}.
 	var lexerActionExecutor = params.lexerActionExecutor || null;
     this.lexerActionExecutor = lexerActionExecutor || (config!==null ? config.lexerActionExecutor : null);
