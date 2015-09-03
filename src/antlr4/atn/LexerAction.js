@@ -52,7 +52,17 @@ LexerAction.prototype.hashString = function() {
 };
 
 LexerAction.prototype.equals = function(other) {
-    return this === other;
+    if (this === other)
+    {
+        return true;
+    }
+
+    if (!(other instanceof LexerAction))
+    {
+        return false;
+    }
+
+    return this.actionType == other.actionType;
 };
 
 
@@ -79,6 +89,10 @@ LexerSkipAction.prototype.execute = function(lexer) {
 
 LexerSkipAction.prototype.toString = function() {
 	return "skip";
+};
+
+LexerSkipAction.prototype.equals = function(other) {
+	return this === other;
 };
 
 //  Implements the {@code type} lexer action by calling {@link Lexer//setType}
@@ -367,7 +381,7 @@ LexerIndexedCustomAction.prototype.equals = function(other) {
     } else if (! (other instanceof LexerIndexedCustomAction)) {
         return false;
     } else {
-        return this.offset === other.offset && this.action === other.action;
+        return this.offset === other.offset && this.action.equals(other.action);
     }
 };
 
