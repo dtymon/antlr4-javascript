@@ -144,23 +144,19 @@ RuleContext.prototype.toString = function(ruleNames, stop) {
 	ruleNames = ruleNames || null;
 	stop = stop || null;
 	var p = this;
-	var s = "[";
+	var s = [];
 	while (p !== null && p !== stop) {
 		if (ruleNames === null) {
 			if (!p.isEmpty()) {
-				s += p.invokingState;
+				s.push(p.invokingState);
 			}
 		} else {
 			var ri = p.ruleIndex;
 			var ruleName = (ri >= 0 && ri < ruleNames.length) ? ruleNames[ri]
-					: "" + ri;
-			s += ruleName;
-		}
-		if (p.parentCtx !== null && (ruleNames !== null || !p.parentCtx.isEmpty())) {
-			s += " ";
+					: ri;
+			s.push(ruleName);
 		}
 		p = p.parentCtx;
 	}
-	s += "]";
-	return s;
+	return "[" + s.join(" ") + "]";
 };

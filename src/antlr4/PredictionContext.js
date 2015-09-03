@@ -326,25 +326,19 @@ ArrayPredictionContext.prototype.equals = function(other) {
 ArrayPredictionContext.prototype.toString = function() {
 	if (this.isEmpty()) {
 		return "[]";
-	} else {
-		var s = "[";
-		for (var i = 0; i < this.returnStates.length; i++) {
-			if (i > 0) {
-				s = s + ", ";
-			}
-			if (this.returnStates[i] === PredictionContext.EMPTY_RETURN_STATE) {
-				s = s + "$";
-				continue;
-			}
-			s = s + this.returnStates[i];
-			if (this.parents[i] !== null) {
-				s = s + " " + this.parents[i];
-			} else {
-				s = s + "null";
-			}
-		}
-		return s + "]";
 	}
+
+	var items = [];
+	var numStates = this.returnStates.length;
+	for (var i = 0; i < numStates; ++i) {
+		if (this.returnStates[i] === PredictionContext.EMPTY_RETURN_STATE) {
+			items.push("$");
+			continue;
+		}
+		var parent = (this.parents[i] !== null) ? this.parents[i].toString() : "null";
+		items.push(this.returnStates[i] + " " + parent);
+	}
+	return "[" + items.join(", ") + "]";
 };
 
 // Convert a {@link RuleContext} tree to a {@link PredictionContext} graph.
@@ -542,10 +536,10 @@ function mergeSingletons(a, b, rootIsWildcard, mergeCache) {
 function mergeRoot(a, b, rootIsWildcard) {
 	if (rootIsWildcard) {
 		if (a === PredictionContext.EMPTY) {
-			return PredictionContext.EMPTY; // // + b =//
+			return PredictionContext.EMPTY; // * + b = *
 		}
 		if (b === PredictionContext.EMPTY) {
-			return PredictionContext.EMPTY; // a +// =//
+			return PredictionContext.EMPTY; // a + * = *
 		}
 	} else {
 		if (a === PredictionContext.EMPTY && b === PredictionContext.EMPTY) {
