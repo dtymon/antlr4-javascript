@@ -38,6 +38,7 @@
 //
 
 var Set = require('./../Utils').Set;
+var MurmurHash = require('./../MurmurHash').MurmurHash;
 
 function SemanticContext() {
 	return this;
@@ -135,8 +136,13 @@ Predicate.prototype.evaluate = function(parser, outerContext) {
 	return parser.sempred(localctx, this.ruleIndex, this.predIndex);
 };
 
-Predicate.prototype.hashString = function() {
-	return "" + this.ruleIndex + "/" + this.predIndex + "/" + this.isCtxDependent;
+Predicate.prototype.hashCode = function() {
+    var hashCode = MurmurHash.initialize();
+    hashCode = MurmurHash.update(hashCode, this.ruleIndex);
+    hashCode = MurmurHash.update(hashCode, this.predIndex);
+    hashCode = MurmurHash.update(hashCode, this.isCtxDependent ? 1 : 0);
+    hashCode = MurmurHash.finish(hashCode, 3);
+    return hashCode;
 };
 
 Predicate.prototype.equals = function(other) {
@@ -179,8 +185,9 @@ PrecedencePredicate.prototype.compareTo = function(other) {
 	return this.precedence - other.precedence;
 };
 
-PrecedencePredicate.prototype.hashString = function() {
-	return "31";
+PrecedencePredicate.prototype.hashCode = function() {
+    var hashCode = 1;
+    return 31 * hashCode + this.precedence;
 };
 
 PrecedencePredicate.prototype.equals = function(other) {
@@ -258,8 +265,8 @@ AND.prototype.equals = function(other) {
 	}
 };
 
-AND.prototype.hashString = function() {
-	return "" + this.opnds + "/AND";
+AND.prototype.hashCode = function() {
+    return MurmurHash.hashArray(this.opnds, 7);
 };
 //
 // {@inheritDoc}
@@ -362,8 +369,8 @@ OR.prototype.constructor = function(other) {
 	}
 };
 
-OR.prototype.hashString = function() {
-	return "" + this.opnds + "/OR";
+OR.prototype.hashCode = function() {
+    return MurmurHash.hashArray(this.opnds, 13);
 };
 
 // <p>

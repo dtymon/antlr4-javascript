@@ -39,6 +39,7 @@
 
 var DecisionState = require('./ATNState').DecisionState;
 var SemanticContext = require('./SemanticContext').SemanticContext;
+var MurmurHash = require('../MurmurHash').MurmurHash;
 
 function checkParams(params, isCfg) {
 	if(params===null) {
@@ -114,14 +115,14 @@ ATNConfig.prototype.equals = function(other) {
     }
 };
 
-ATNConfig.prototype.shortHashString = function() {
-    return "" + this.state.stateNumber + "/" + this.alt + "/" + this.semanticContext;
-};
-
-ATNConfig.prototype.hashString = function() {
-    return "" + this.state.stateNumber + "/" + this.alt + "/" +
-             (this.context===null ? "" : this.context.hashString()) +
-             "/" + this.semanticContext.hashString();
+ATNConfig.prototype.hashCode = function () {
+    var hashCode = MurmurHash.initialize(7);
+    hashCode = MurmurHash.update(hashCode, this.state.stateNumber);
+    hashCode = MurmurHash.update(hashCode, this.alt);
+    hashCode = MurmurHash.updateObject(hashCode, this.context);
+    hashCode = MurmurHash.updateObject(hashCode, this.semanticContext);
+    hashCode = MurmurHash.finish(hashCode, 4);
+    return hashCode;
 };
 
 ATNConfig.prototype.toString = function() {
@@ -149,10 +150,16 @@ function LexerATNConfig(params, config) {
 LexerATNConfig.prototype = Object.create(ATNConfig.prototype);
 LexerATNConfig.prototype.constructor = LexerATNConfig;
 
-LexerATNConfig.prototype.hashString = function() {
-    return "" + this.state.stateNumber + this.alt + this.context +
-            this.semanticContext + (this.passedThroughNonGreedyDecision ? 1 : 0) +
-            this.lexerActionExecutor;
+LexerATNConfig.prototype.hashCode = function() {
+    var hashCode = MurmurHash.initialize(7);
+    hashCode = MurmurHash.update(hashCode, this.state.stateNumber);
+    hashCode = MurmurHash.update(hashCode, this.alt);
+    hashCode = MurmurHash.updateObject(hashCode, this.context);
+    hashCode = MurmurHash.updateObject(hashCode, this.semanticContext);
+    hashCode = MurmurHash.update(hashCode, this.passedThroughNonGreedyDecision ? 1 : 0);
+    hashCode = MurmurHash.updateObject(hashCode, this.lexerActionExecutor);
+    hashCode = MurmurHash.finish(hashCode, 6);
+    return hashCode;
 };
 
 LexerATNConfig.prototype.equals = function(other) {

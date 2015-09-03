@@ -20,7 +20,7 @@ function standardEqualsFunction(a,b) {
 }
 
 function standardHashFunction(a) {
-	return a.hashString();
+	return a.hashCode();
 }
 
 function Set(hashFunction, equalsFunction) {
@@ -105,12 +105,17 @@ Set.prototype.toString = function() {
 };
 
 function BitSet() {
-	this.data = [];
-	return this;
+    this.data = [];
+    this.count = 0;
+    return this;
 }
 
 BitSet.prototype.add = function(value) {
-	this.data[value] = true;
+    if (!(value in this.data))
+    {
+        this.data[value] = true;
+        ++this.count;
+    }
 };
 
 BitSet.prototype.or = function(set) {
@@ -119,7 +124,11 @@ BitSet.prototype.or = function(set) {
 };
 
 BitSet.prototype.remove = function(value) {
-	delete this.data[value];
+    if (value in this.data)
+    {
+        delete this.data[value];
+        --this.count;
+    }
 };
 
 BitSet.prototype.contains = function(value) {
@@ -134,15 +143,41 @@ BitSet.prototype.minValue = function() {
 	return Math.min.apply(null, this.values());
 };
 
-BitSet.prototype.hashString = function() {
-	return this.values().toString();
+BitSet.prototype.hashCode = function () {
+    var h = 1234;
+    var values = Object.keys(this.data)
+                       .sort(function (a, b) { return b - a });
+    for (var idx = values.length; --idx >= 0;)
+    {
+        h ^= values[idx] * (idx + 1);
+    }
+    return ((h >> 32) ^ h) & 0xffffffff;
 };
 
 BitSet.prototype.equals = function(other) {
-	if(!(other instanceof BitSet)) {
-		return false;
-	}
-	return this.hashString()===other.hashString();
+    if (this === other)
+    {
+        return true;
+    }
+
+    if (!(other instanceof BitSet))
+    {
+        return false;
+    }
+
+    if (this.count != other.count)
+    {
+        return false;
+    }
+
+    for (var key in this.data)
+    {
+        if (!(key in other.data))
+        {
+            return false;
+        }
+    }
+    return true;
 };
 
 Object.defineProperty(BitSet.prototype, "length", {

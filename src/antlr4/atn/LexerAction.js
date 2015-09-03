@@ -29,6 +29,8 @@
  // THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  //
 
+var MurmurHash = require('../MurmurHash').MurmurHash;
+
 function LexerActionType() {
 }
 
@@ -47,8 +49,10 @@ function LexerAction(action) {
     return this;
 }
 
-LexerAction.prototype.hashString = function() {
-    return "" + this.actionType;
+LexerAction.prototype.hashCode = function() {
+    var hash = MurmurHash.initialize();
+    hash = MurmurHash.update(hash, this.actionType);
+    return MurmurHash.finish(hash, 1);
 };
 
 LexerAction.prototype.equals = function(other) {
@@ -87,6 +91,12 @@ LexerSkipAction.prototype.execute = function(lexer) {
     lexer.skip();
 };
 
+LexerSkipAction.prototype.hashCode = function() {
+    var hash = MurmurHash.initialize();
+    hash = MurmurHash.update(hash, this.actionType);
+    return MurmurHash.finish(hash, 1);
+};
+
 LexerSkipAction.prototype.toString = function() {
 	return "skip";
 };
@@ -110,8 +120,11 @@ LexerTypeAction.prototype.execute = function(lexer) {
     lexer.type = this.type;
 };
 
-LexerTypeAction.prototype.hashString = function() {
-	return "" + this.actionType + this.type;
+LexerTypeAction.prototype.hashCode = function() {
+    var hash = MurmurHash.initialize();
+    hash = MurmurHash.update(hash, this.actionType);
+    hash = MurmurHash.update(hash, this.type);
+    return MurmurHash.finish(hash, 2);
 };
 
 
@@ -146,8 +159,11 @@ LexerPushModeAction.prototype.execute = function(lexer) {
     lexer.pushMode(this.mode);
 };
 
-LexerPushModeAction.prototype.hashString = function() {
-    return "" + this.actionType + this.mode;
+LexerPushModeAction.prototype.hashCode = function() {
+    var hash = MurmurHash.initialize();
+    hash = MurmurHash.update(hash, this.actionType);
+    hash = MurmurHash.update(hash, this.mode);
+    return MurmurHash.finish(hash, 2);
 };
 
 LexerPushModeAction.prototype.equals = function(other) {
@@ -184,6 +200,12 @@ LexerPopModeAction.prototype.execute = function(lexer) {
     lexer.popMode();
 };
 
+LexerPopModeAction.prototype.hashCode = function() {
+    var hash = MurmurHash.initialize();
+    hash = MurmurHash.update(hash, this.actionType);
+    return MurmurHash.finish(hash, 1);
+};
+
 LexerPopModeAction.prototype.toString = function() {
 	return "popMode";
 };
@@ -205,6 +227,12 @@ LexerMoreAction.INSTANCE = new LexerMoreAction();
 // <p>This action is implemented by calling {@link Lexer//popMode}.</p>
 LexerMoreAction.prototype.execute = function(lexer) {
     lexer.more();
+};
+
+LexerMoreAction.prototype.hashCode = function() {
+    var hash = MurmurHash.initialize();
+    hash = MurmurHash.update(hash, this.actionType);
+    return MurmurHash.finish(hash, 1);
 };
 
 LexerMoreAction.prototype.toString = function() {
@@ -229,8 +257,11 @@ LexerModeAction.prototype.execute = function(lexer) {
     lexer.mode(this.mode);
 };
 
-LexerModeAction.prototype.hashString = function() {
-	return "" + this.actionType + this.mode;
+LexerModeAction.prototype.hashCode = function() {
+    var hash = MurmurHash.initialize();
+    hash = MurmurHash.update(hash, this.actionType);
+    hash = MurmurHash.update(hash, this.mode);
+    return MurmurHash.finish(hash, 2);
 };
 
 LexerModeAction.prototype.equals = function(other) {
@@ -282,8 +313,12 @@ LexerCustomAction.prototype.execute = function(lexer) {
     lexer.action(null, this.ruleIndex, this.actionIndex);
 };
 
-LexerCustomAction.prototype.hashString = function() {
-    return "" + this.actionType + this.ruleIndex + this.actionIndex;
+LexerCustomAction.prototype.hashCode = function() {
+    var hash = MurmurHash.initialize();
+    hash = MurmurHash.update(hash, this.actionType);
+    hash = MurmurHash.update(hash, this.ruleIndex);
+    hash = MurmurHash.update(hash, this.actionIndex);
+    return MurmurHash.finish(hash, 3);
 };
 
 LexerCustomAction.prototype.equals = function(other) {
@@ -315,8 +350,11 @@ LexerChannelAction.prototype.execute = function(lexer) {
     lexer._channel = this.channel;
 };
 
-LexerChannelAction.prototype.hashString = function() {
-    return "" + this.actionType + this.channel;
+LexerChannelAction.prototype.hashCode = function() {
+    var hash = MurmurHash.initialize();
+    hash = MurmurHash.update(hash, this.actionType);
+    hash = MurmurHash.update(hash, this.channel);
+    return MurmurHash.finish(hash, 2);
 };
 
 LexerChannelAction.prototype.equals = function(other) {
@@ -371,8 +409,11 @@ LexerIndexedCustomAction.prototype.execute = function(lexer) {
     this.action.execute(lexer);
 };
 
-LexerIndexedCustomAction.prototype.hashString = function() {
-    return "" + this.actionType + this.offset + this.action;
+LexerIndexedCustomAction.prototype.hashCode = function() {
+    var hash = MurmurHash.initialize();
+    hash = MurmurHash.update(hash, this.offset);
+    hash = MurmurHash.updateObject(hash, this.action);
+    return MurmurHash.finish(hash, 2);
 };
 
 LexerIndexedCustomAction.prototype.equals = function(other) {

@@ -39,9 +39,12 @@ var Utils = require('./../Utils');
 var Set = Utils.Set;
 var SemanticContext = require('./SemanticContext').SemanticContext;
 var merge = require('./../PredictionContext').merge;
+var MurmurHash = require('../MurmurHash').MurmurHash;
 
 function hashATNConfig(c) {
-	return c.shortHashString();
+    var hashCode = 31 * 7 + c.state.stateNumber;
+    hashCode = 31 * hashCode + c.alt;
+    return 31 * hashCode + c.semanticContext.hashCode();
 }
 
 function equalATNConfigs(a, b) {
@@ -94,7 +97,7 @@ function ATNConfigSet(fullCtx) {
 	this.hasSemanticContext = false;
 	this.dipsIntoOuterContext = false;
 
-	this.cachedHashString = "-1";
+	this.cachedHashCode = -1;
 
 	return this;
 }
@@ -123,7 +126,7 @@ ATNConfigSet.prototype.add = function(config, mergeCache) {
 	}
 	var existing = this.configLookup.add(config);
 	if (existing === config) {
-		this.cachedHashString = "-1";
+		this.cachedHashCode = -1;
 		this.configs.push(config); // track order here
 		return true;
 	}
@@ -217,23 +220,20 @@ ATNConfigSet.prototype.equals = function(other) {
     return true;
 };
 
-ATNConfigSet.prototype.hashString = function() {
-	if (this.readonly) {
-		if (this.cachedHashString === "-1") {
-			this.cachedHashString = this.hashConfigs();
-		}
-		return this.cachedHashString;
-	} else {
-		return this.hashConfigs();
-	}
-};
+ATNConfigSet.prototype.hashCode = function() {
+    if (this.readonly && (this.cachedHashCode != -1))
+    {
+        return this.cachedHashCode;
+    }
 
-ATNConfigSet.prototype.hashConfigs = function() {
-	var s = "";
-	this.configs.map(function(c) {
-		s += c.toString();
-	});
-	return s;
+    this.cachedHashCode = 1;
+    var numConfigs = this.configs.length;
+    for (var idx = 0; idx < numConfigs; ++idx)
+    {
+        var hash = this.configs[idx].hashCode();
+        this.cachedHashCode = (MurmurHash.multiply(31, this.cachedHashCode) + hash) & 0xffffffff;
+    }
+    return this.cachedHashCode;
 };
 
 Object.defineProperty(ATNConfigSet.prototype, "length", {
@@ -265,7 +265,7 @@ ATNConfigSet.prototype.clear = function() {
 		throw "This set is readonly";
 	}
 	this.configs = [];
-	this.cachedHashString = "-1";
+	this.cachedHashCode = -1;
 	this.configLookup = new Set();
 };
 

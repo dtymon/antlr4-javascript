@@ -30,10 +30,13 @@
 ///
 
 var RuleContext = require('./RuleContext').RuleContext;
+var MurmurHash = require('./MurmurHash').MurmurHash;
+
+var INITIAL_HASH = 1;
 
 var globalNodeCount = 0;
-function PredictionContext(cachedHashString) {
-	this.cachedHashString = cachedHashString;
+function PredictionContext(cachedHashCode) {
+	this.cachedHashCode = cachedHashCode;
 	this.id = globalNodeCount++;
 }
 
@@ -82,16 +85,36 @@ PredictionContext.prototype.hasEmptyPath = function() {
 	return this.getReturnState(this.length - 1) === PredictionContext.EMPTY_RETURN_STATE;
 };
 
-PredictionContext.prototype.hashString = function() {
-	return this.cachedHashString;
+PredictionContext.prototype.hashCode = function() {
+    return this.cachedHashCode;
 };
 
-function calculateHashString(parent, returnState) {
-	return "" + parent + returnState;
+function calculateEmptyHashCode() {
+    var hash = MurmurHash.initialize(INITIAL_HASH);
+    return MurmurHash.finish(hash, 0);
 }
 
-function calculateEmptyHashString() {
-	return "";
+function calculateHashCode(parent, returnState) {
+    var hash = MurmurHash.initialize(INITIAL_HASH);
+    hash = MurmurHash.updateObject(hash, parent);
+    hash = MurmurHash.update(hash, returnState);
+    return MurmurHash.finish(hash, 2);
+}
+
+function calculateHashCodeArray(parents, returnStates) {
+    var numParents = (parents == null) ? 0 : parents.length;
+    var numStates = (returnStates == null) ? 0 : returnStates.length;
+
+    var hash = MurmurHash.initialize(INITIAL_HASH);
+    for (var idx = 0; idx < numParents; ++idx)
+    {
+        hash = MurmurHash.updateObject(hash, parents[idx]);
+    }
+    for (idx = 0; idx < numStates; ++idx)
+    {
+        hash = MurmurHash.update(hash, returnStates[idx]);
+    }
+    return MurmurHash.finish(hash, 2 * numParents);
 }
 
 // Used to cache {@link PredictionContext} objects. Its used for the shared
@@ -112,17 +135,17 @@ PredictionContextCache.prototype.add = function(ctx) {
 	if (ctx === PredictionContext.EMPTY) {
 		return PredictionContext.EMPTY;
 	}
-	var existing = this.cache[ctx.cachedHashString];
+	var existing = this.cache[ctx.cachedHashCode];
 	if (existing != null) {
 		return existing;
 	}
-	this.cache[ctx.cachedHashString] = ctx;
+	this.cache[ctx.cachedHashCode] = ctx;
 	++this.size;
 	return ctx;
 };
 
 PredictionContextCache.prototype.get = function(ctx) {
-	return this.cache[ctx.cachedHashString] || null;
+	return this.cache[ctx.cachedHashCode] || null;
 };
 
 Object.defineProperty(PredictionContextCache.prototype, "length", {
@@ -132,9 +155,9 @@ Object.defineProperty(PredictionContextCache.prototype, "length", {
 });
 
 function SingletonPredictionContext(parent, returnState) {
-	var hashString = parent !== null ? calculateHashString(parent, returnState)
-			: calculateEmptyHashString();
-	PredictionContext.call(this, hashString);
+	var hashCode = parent !== null ? calculateHashCode(parent, returnState)
+			: calculateEmptyHashCode();
+	PredictionContext.call(this, hashCode);
 	this.parentCtx = parent;
 	this.returnState = returnState;
 }
@@ -170,7 +193,7 @@ SingletonPredictionContext.prototype.equals = function(other) {
 		return true;
 	} else if (!(other instanceof SingletonPredictionContext)) {
 		return false;
-	} else if (this.hashString() !== other.hashString()) {
+	} else if (this.cachedHashCode !== other.cachedHashCode) {
 		return false; // can't be same if hash is different
 	} else {
 		if(this.returnState !== other.returnState)
@@ -180,10 +203,6 @@ SingletonPredictionContext.prototype.equals = function(other) {
 		else
             return this.parentCtx.equals(other.parentCtx);
 	}
-};
-
-SingletonPredictionContext.prototype.hashString = function() {
-	return this.cachedHashString;
 };
 
 SingletonPredictionContext.prototype.toString = function() {
@@ -234,7 +253,7 @@ function ArrayPredictionContext(parents, returnStates) {
 	// from {@link //EMPTY} and non-empty. We merge {@link //EMPTY} by using
 	// null parent and
 	// returnState == {@link //EMPTY_RETURN_STATE}.
-	var hash = calculateHashString(parents, returnStates);
+	var hash = calculateHashCodeArray(parents, returnStates);
 	PredictionContext.call(this, hash);
 	this.parents = parents;
 	this.returnStates = returnStates;
@@ -275,7 +294,7 @@ ArrayPredictionContext.prototype.equals = function(other) {
         return false;
     }
 
-    if (this.cachedHashString != other.cachedHashString)
+    if (this.cachedHashCode != other.cachedHashCode)
     {
         return false; // can't be same if hash is different
     }
@@ -345,17 +364,6 @@ function predictionContextFromRuleContext(atn, outerContext) {
 	var state = atn.states[outerContext.invokingState];
 	var transition = state.transitions[0];
 	return SingletonPredictionContext.create(parent, transition.followState.stateNumber);
-}
-
-function calculateListsHashString(parents, returnStates) {
-	var s = "";
-	parents.map(function(p) {
-		s = s + p;
-	});
-	returnStates.map(function(r) {
-		s = s + r;
-	});
-	return s;
 }
 
 function merge(a, b, rootIsWildcard, mergeCache) {

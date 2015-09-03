@@ -32,6 +32,7 @@
 var ATNConfigSet = require('./../atn/ATNConfigSet').ATNConfigSet;
 var Utils = require('./../Utils');
 var Set = Utils.Set;
+var MurmurHash = require('../MurmurHash').MurmurHash;
 
 // Map a predicate to a predicted alternative.///
 
@@ -151,12 +152,14 @@ DFAState.prototype.equals = function(other) {
 	}
 };
 
-DFAState.prototype.toString = function() {
-	return "" + this.stateNumber + ":" + this.hashString();
+DFAState.prototype.hashCode = function() {
+    var hash = MurmurHash.initialize(7);
+    hash = MurmurHash.update(hash, this.configs.hashCode());
+    return MurmurHash.finish(hash, 1);
 };
 
-DFAState.prototype.hashString = function() {
-	return "" +  this.configs +
+DFAState.prototype.toString = function() {
+	return "" + this.stateNumber + ":" + this.configs +
 			(this.isAcceptState ?
 					"=>" + (this.predicates !== null ?
 								this.predicates :

@@ -1631,7 +1631,7 @@ ParserATNSimulator.prototype.addDFAState = function(dfa, D) {
     if (D == ATNSimulator.ERROR) {
         return D;
     }
-    var hash = D.hashString();
+    var hash = D.hashCode();
     var existing = dfa.states[hash] || null;
     if(existing!==null) {
         return existing;

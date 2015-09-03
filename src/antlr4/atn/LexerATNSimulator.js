@@ -610,7 +610,7 @@ LexerATNSimulator.prototype.addDFAState = function(configs) {
 		proposed.lexerActionExecutor = firstConfigWithRuleStopState.lexerActionExecutor;
 		proposed.prediction = this.atn.ruleToTokenType[firstConfigWithRuleStopState.state.ruleIndex];
 	}
-	var hash = proposed.hashString();
+	var hash = proposed.hashCode();
 	var dfa = this.decisionToDFA[this.mode];
 	var existing = dfa.states[hash] || null;
 	if (existing!==null) {
