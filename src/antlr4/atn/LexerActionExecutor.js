@@ -162,14 +162,30 @@ LexerActionExecutor.prototype.hashString = function() {
 };
 
 LexerActionExecutor.prototype.equals = function(other) {
-	if (this === other) {
-		return true;
-	} else if (!(other instanceof LexerActionExecutor)) {
-		return false;
-	} else {
-		return this._hashString === other._hashString &&
-				this.lexerActions === other.lexerActions;
-	}
+    if (this === other)
+    {
+        return true;
+    }
+
+    if (!(other instanceof LexerActionExecutor))
+    {
+        return false;
+    }
+
+    if (this._hashString != other._hashString)
+    {
+        return false;
+    }
+
+    var numActions = this.lexerActions.length
+    for (var idx = 0; idx < numActions; ++idx)
+    {
+        if (!this.lexerActions[idx].equals(other.lexerActions[idx]))
+        {
+            return false;
+        }
+    }
+    return true;
 };
 
 exports.LexerActionExecutor = LexerActionExecutor;
