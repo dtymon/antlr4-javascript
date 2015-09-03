@@ -54,6 +54,28 @@ Set.prototype.add = function(value) {
 	}
 };
 
+Set.prototype.addIfAbsent = function(value) {
+    var key = "hash_" + this.hashFunction(value);
+    var values = this.data[key];
+    if (values == null)
+    {
+        this.data[key] = [ value ];
+        return true;
+    }
+
+    var numValues = values.length;
+    for (var idx = 0; idx < numValues; ++idx)
+    {
+        if (this.equalsFunction(value, values[idx]))
+        {
+            // Already present, no need to add
+            return false;
+        }
+    }
+    values.push(value);
+    return true;
+};
+
 Set.prototype.contains = function(value) {
 	var key = "hash_" + this.hashFunction(value);
 	if(key in this.data) {

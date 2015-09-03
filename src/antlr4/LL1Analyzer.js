@@ -146,10 +146,11 @@ LL1Analyzer.prototype.LOOK = function(s, stopState, ctx) {
 ///
 LL1Analyzer.prototype._LOOK = function(s, stopState , ctx, look, lookBusy, calledRuleStack, seeThruPreds, addEOF) {
     var c = new ATNConfig({state:s, alt:0, context: ctx}, null);
-    if (lookBusy.contains(c)) {
+    var added = lookBusy.addIfAbsent(c);
+    if (!added)
+    {
         return;
     }
-    lookBusy.add(c);
     if (s === stopState) {
         if (ctx ===null) {
             look.addOne(Token.EPSILON);
@@ -184,7 +185,8 @@ LL1Analyzer.prototype._LOOK = function(s, stopState , ctx, look, lookBusy, calle
             return;
         }
     }
-    for(var j=0; j<s.transitions.length; j++) {
+    var numTransitions = s.transitions.length;
+    for(var j=0; j<numTransitions; ++j) {
         var t = s.transitions[j];
         if (t.constructor === RuleTransition) {
             if (calledRuleStack.contains(t.target.ruleIndex)) {
